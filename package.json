@@ -1,6 +1,6 @@
 {
   "name": "gereji-publisher",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A response packaging and publishing helper for the gereji web application framework.",
   "main": "publisher.js",
   "scripts": {

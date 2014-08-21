@@ -20,7 +20,7 @@ module.exports = function(){
 		},
 		write: function(context){
 			this.writeHead(context);
-			this.writeContent();
+			this.writeContent(context);
 		},
 		writeHead: function(context){
             var response = context.get("response");
@@ -71,7 +71,9 @@ module.exports = function(){
             return self.headers;
         },
         stream: function(context){
-            switch(context.get("route").type){
+            var route = context.get('route');
+            var type = route ? route.type : null;
+            switch(type){
                 case "json":
                     return this.streamJSON(context);
                 case "xml":
@@ -90,7 +92,7 @@ module.exports = function(){
 	                reader.write(self.body);
 				else
 					reader.write(toArray());
-                reader.write(null);
+                reader.end();
                 return reader;
             };
             return stream;
@@ -110,7 +112,7 @@ module.exports = function(){
                 var xml = transform({data : self.body});
                 xml.unshift('<?xml version="1.0"?>');
                 reader.write(xml);
-                reader.write(null);
+                reader.end();
                 return reader;
             };
             return stream;
@@ -132,16 +134,16 @@ module.exports = function(){
 			var stream = new (require('stream'));
 			stream.pipe = function(reader){
                 reader.write(toArray().join('\n'));
-                reader.write(null);
+                reader.end();
                 return reader;				
 			};
 			return stream;
 		},
 		toArray: function(){
 			var text = [];
-			for(var i in this.body){
-				for(var j in this.body[i]){
-					text.push(this.body[i][j]);
+			for(var i in self.body){
+				for(var j in self.body[i]){
+					text.push(self.body[i][j]);
 				}
 			}
 			return text;			
@@ -162,7 +164,8 @@ module.exports = function(){
 			return template.join("/");
 		},
         type: function(context){
-            var route = context.get('route').type;
+			var route = context.get('route');
+			var type = route ? route.type : null;
             return type == "xml" ? "application/xml" : type == "html" ? "text/html" : type == "json" ? "application/json" : "text/plain";
         },
         encoding: function(context){
