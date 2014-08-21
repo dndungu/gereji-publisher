@@ -1,0 +1,28 @@
+{
+  "name": "gereji-publisher",
+  "version": "0.0.1",
+  "description": "A response packaging and publishing helper for the gereji web application framework.",
+  "main": "publisher.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnjuguna/gereji-publisher.git"
+  },
+  "keywords": [
+    "xml",
+    "json",
+    "saxon",
+    "xslt",
+    "gzip",
+    "inflate",
+    "identity"
+  ],
+  "author": "David Njuguna <dnjuguna@gmail.com> (https://github.com/dnjuguna)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dnjuguna/gereji-publisher/issues"
+  },
+  "homepage": "https://github.com/dnjuguna/gereji-publisher"
+}
