@@ -12,10 +12,11 @@ module.exports = function(){
 			self.statusCode = 200;
 			self.headers = {};
 			self.body = {};
+			return this;
 		},
-		push: function(app, handler, content){
-            self.body[app] = self.body[app] ? self.body[app] : {};
-            self.body[app][handler] = content;
+		push: function(module, handler, content){
+            self.body[module] = self.body[module] ? self.body[module] : {};
+            self.body[module][handler] = content;
             return this;		
 		},
 		write: function(context){
@@ -38,17 +39,18 @@ module.exports = function(){
 		},
 		writeContent: function(context){
 			var response = context.get("response");
+			var stream = this.stream(context);
 			switch(this.encoding(context)){
 				case "gzip":
 					var gzip = zlib.createGzip();
-					this.stream(context).pipe(gzip).pipe(response);
+					stream.pipe(gzip).pipe(response);
 					break;
 				case "deflate":
 					var deflate = zlib.createDeflate();
-					this.stream(context).pipe(deflate).pipe(response);
+					stream.pipe(deflate).pipe(response);
 					break;
 				default:
-					this.stream(context).pipe(response);
+					stream.pipe(response);
 					break;
 			}
 			return this;
@@ -85,13 +87,17 @@ module.exports = function(){
             }
         },
         streamJSON: function(context){
-			var toArray = this.toArray;
+			var that = this;
             var stream = new (require('stream'));
-            stream.pipe = function(reader){
+            stream.pipe = function(reader, options){
+                if(!options)
+                    options = {end : true};
 				if(context.get("route").sync)
-	                reader.write(self.body);
+	                reader.write(JSON.stringify(self.body, null, 4));
 				else
-					reader.write(toArray());
+					reader.write(JSON.stringify(that.toArray(), null, 4));
+                if(options.end)
+                    reader.end();
                 reader.end();
                 return reader;
             };
@@ -102,29 +108,32 @@ module.exports = function(){
                 var xml = [];
                 for(var i in content){
                     var name = isNaN(i) ? i : 'node-' + String(i);
-                    var value = ['number', 'boolean', 'string'].indexOf(typeof content[i]) == -1 ? transform(content[i], xml) : String(content[i]);
+                    var value = ['number', 'boolean', 'string'].indexOf(typeof content[i]) == -1 ? transform(content[i]) : String(content[i]);
                     xml.push('<' + name + '>' + value + '</' + name + '>');
                 }
                 return xml;
             };
             var stream = new (require('stream'));
-            stream.pipe = function(reader){
+            stream.pipe = function(reader, options){
+				if(!options)
+					options = {end : true};
                 var xml = transform({data : self.body});
                 xml.unshift('<?xml version="1.0"?>');
-                reader.write(xml);
-                reader.end();
+                reader.write(xml.join("\n"));
+				if(options.end)
+                	reader.end();
                 return reader;
             };
             return stream;
         },
-        streamHTML: function(context){
+        streamHTML: function(context, options){
             try{
                 var jar = context.get("settings").path + "lib/saxon/saxon9he.jar";
                 var saxon = require('saxon-stream2');
                 var xml = this.streamXML();
 				var xsl = this.xsl(context);
 				var xslt = saxon(jar, xsl, { timeout : 5000 });
-				return xml.pipe(xslt);
+				return xml.pipe(xslt, options);
             }catch(error){
 				//TODO
             }
@@ -132,9 +141,12 @@ module.exports = function(){
 		streamText: function(){
 			var toArray = this.toArray;
 			var stream = new (require('stream'));
-			stream.pipe = function(reader){
+			stream.pipe = function(reader, options){
+				if(!options)
+					options = {end : true};
                 reader.write(toArray().join('\n'));
-                reader.end();
+				if(options.end)
+	                reader.end();
                 return reader;				
 			};
 			return stream;
